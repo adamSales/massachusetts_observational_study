@@ -243,7 +243,25 @@ and problem_logs.path_info not like '%SP%'
 group by remnant_input_alogs.assignment_log_id, assignments.group_context_xid; 
 
 
--- Check the tables together
+
+-- Remnant Targets
+
+select 
+encode_ceri('PS', remnant_target_alogs.sequence_id) as target_sequence, 
+remnant_target_alogs.student_id, 
+(assignment_logs.end_time is not null)::int as assignment_completed, 
+count(*) as problems_completed 
+from remnant_target_alogs
+left join student_data.assignment_logs on assignment_logs.id = remnant_target_alogs.assignment_log_id 
+left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_target_alogs.assignment_log_id 
+where problem_logs.end_time is not null 
+and problem_logs.first_response_time is not null 
+and problem_logs.path_info not like '%SP%' 
+group by encode_ceri('PS', remnant_target_alogs.sequence_id), remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int 
+order by remnant_target_alogs.student_id; 
+
+
+-- Check the tables
 
 select 
 count(*) - count(problem_id) as problem_id,
@@ -287,4 +305,42 @@ from problem_level_features
 
 -- Put the tables together
 
-select * from assignment_level_features 
+select 
+assignment_level_features.target_sequence,
+assignment_level_features.student_id,
+assignment_level_features.assignment_order,
+assignment_level_features.is_skill_builder,
+assignment_level_features.has_due_date,
+assignment_level_features.assignment_completed,
+assignment_level_features.time_since_last_assignment_start,
+assignment_level_features.time_since_last_assignment_end,
+assignment_level_features.session_count_raw,
+assignment_level_features.session_count_normalized,
+assignment_level_features.session_count_class_percentile,
+assignment_level_features.day_count_raw,
+assignment_level_features.day_count_normalized,
+assignment_level_features.day_count_class_percentile,
+assignment_level_features.completed_problem_count_raw,
+assignment_level_features.completed_problem_count_normalized,
+assignment_level_features.completed_problem_count_class_percentile,
+problem_level_features.median_problem_time_on_task_raw,
+problem_level_features.median_problem_time_on_task_normalized,
+problem_level_features.median_problem_time_on_task_class_percentile,
+problem_level_features.median_problem_first_response_time_raw,
+problem_level_features.median_problem_first_response_time_normalized,
+problem_level_features.median_problem_first_response_time_class_percentile,
+problem_level_features.average_problem_attempt_count,
+problem_level_features.average_problem_attempt_count_normalized,
+problem_level_features.average_problem_attempt_count_class_percentile,
+problem_level_features.average_problem_answer_first,
+problem_level_features.average_problem_answer_first_normalized,
+problem_level_features.average_problem_answer_first_class_percentile,
+problem_level_features.average_problem_correctness,
+problem_level_features.average_problem_correctness_normalized,
+problem_level_features.average_problem_correctness_class_percentile,
+problem_level_features.average_problem_answer_given,
+problem_level_features.average_problem_answer_given_normalized,
+problem_level_features.average_problem_answer_given_class_percentile
+from assignment_level_features 
+left join problem_level_features on assignment_level_features.assignment_log_id = problem_level_features.assignment_log_id_2
+order by assignment_level_features.student_id, assignment_level_features.assignment_order
