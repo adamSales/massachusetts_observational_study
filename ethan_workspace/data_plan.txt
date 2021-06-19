@@ -17,8 +17,5 @@ completed count (raw, assignment normalized, class percentile)
 session count (raw, assignment normalized, class percentile)
 day count (raw, assignment normalized, class percentile)
 
-Demographic Variables:
-opportunity zone flag
-
 Data to Exclude:
 all data from students that participated in experiments

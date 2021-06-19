@@ -55,7 +55,7 @@ encode_ceri('PS', sequence_id) as target_sequence
 from ordered_alogs 
 where log_order = 1 
 and assignment_log_id not in (select assignment_log_id from experiment_excluded_alogs) 
-and encode_ceri('PS', sequence_id) in ('PSAHQV'); 
+and encode_ceri('PS', sequence_id) in ('PSAGF4', 'PSAHQV', 'PSAH9CV', 'PSAJDQG', 'PSAJDQJ', 'PSAJEQW', 'PSAJJXN', 'PSAJVPW', 'PSAJVP8', 'PSAJ2EE', 'PSAJ4ZZ', 'PSAJ43P', 'PSAKUSU', 'PSAMC2V', 'PSAMGHG', 'PSAMQJD', 'PSAMR8Z', 'PSAM4NK', 'PSAPTW7', 'PSAP8PW', 'PSAQJFP', 'PSAR9Y9', 'PSASDZY', 'PSASRKH', 'PSAS25R', 'PSATNB2', 'PSATNCQ', 'PSATZEJ', 'PSAUKPM', 'PSAUKPR', 'PSAUK57', 'PSAUTWT', 'PSAU6Y4', 'PSAU88D', 'PSAV89B', 'PSAWHF4', 'PSAWU6Z', 'PSABANRN'); 
 
 drop table if exists experiment_input_alogs; 
 create table experiment_input_alogs as 
@@ -78,7 +78,7 @@ encode_ceri('PS', sequence_id) as target_sequence
 from ordered_alogs 
 where log_order = 1 
 and assignment_log_id not in (select assignment_log_id from remnant_excluded_alogs) 
-and encode_ceri('PS', sequence_id) in ('PSA2H6G'); 
+and encode_ceri('PS', sequence_id) in ('PSAGF4', 'PSA2H6G', 'PSAVUGH', 'PSAVUGJ', 'PSAVTVP', 'PSAVUGD', 'PSAVUGP', 'PSAVUGC', 'PSAVUGA', 'PSAVUGF', 'PSAVTVM', 'PSAVUF9', 'PSAVUBA', 'PSAVUF6', 'PSAVUBC', 'PSAVUF2', 'PSAVUA4', 'PSAVTVR', 'PSAVUMC', 'PSAVUMH', 'PSAX692', 'PSAVTUH', 'PSAVTUU', 'PSAVUGR', 'PSAVUGQ', 'PSAVUK7', 'PSAVUMA', 'PSAVTVJ', 'PSAVTV6', 'PSAVUAR', 'PSAVUK8', 'PSAVUGY', 'PSAVUME', 'PSA2H6H', 'PSAV9DV', 'PSAVUF5', 'PSAWU7D', 'PSAHK8'); 
 
 drop table if exists remnant_input_alogs; 
 create table remnant_input_alogs as 
@@ -142,8 +142,8 @@ row_number() over(partition by remnant_input_alogs.student_id order by assignmen
 (sequences.parameters like '%pseudo_skill_builder%' or sections.type='MasterySection' or sections.type='LinearMasterySection')::int as is_skill_builder, 
 (assignments.due_date is not null)::int as has_due_date, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
-coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) as time_since_last_assignment_start, 
-coalesce(extract(epoch from (assignment_logs.start_time - lag(filled.end_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) as time_since_last_assignment_end, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_start, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(filled.end_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_end, 
 assignment_level_agg_features.session_count as session_count_raw, 
 case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end as session_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end) as session_count_class_percentile, 
@@ -169,12 +169,12 @@ inner join assignment_level_stats on assignment_level_stats.sequence_id = sequen
 
 drop table if exists problem_level_stats;
 create table problem_level_stats as 
-with medians as
+with ln_medians as
 (
 	select 
 	problem_id as pid, 
-	median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) as time_on_task_med, 
-	median((problem_logs.first_response_time::float / 1000)::numeric) as first_response_time_med 
+	median(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time)))::numeric) as time_on_task_med, 
+	median(ln(problem_logs.first_response_time::float / 1000)::numeric) as first_response_time_med 
 	from student_data.problem_logs 
 	where problem_logs.end_time is not null 
 	and problem_logs.first_response_time is not null 
@@ -183,10 +183,10 @@ with medians as
 )
 select 
 problem_id, 
-medians.time_on_task_med, 
-median(abs(extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - medians.time_on_task_med)::numeric) as time_on_task_mad, 
-medians.first_response_time_med, 
-median(abs((problem_logs.first_response_time::float / 1000) - medians.first_response_time_med)::numeric) as first_response_time_mad, 
+ln_medians.time_on_task_med, 
+median(abs(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - ln_medians.time_on_task_med)::numeric) as time_on_task_mad, 
+ln_medians.first_response_time_med, 
+median(abs(ln(problem_logs.first_response_time::float / 1000) - ln_medians.first_response_time_med)::numeric) as first_response_time_mad, 
 avg(problem_logs.attempt_count) as attempt_count_avg, 
 coalesce(stddev(problem_logs.attempt_count), 0) as attempt_count_stddev, 
 avg((problem_logs.first_action_type_id = 1)::int) as answer_first_avg, 
@@ -196,23 +196,23 @@ coalesce(stddev((problem_logs.discrete_score = 1)::int), 0) as correctness_stdde
 avg((problem_logs.bottom_hint)::int) as answer_given_avg, 
 coalesce(stddev((problem_logs.bottom_hint)::int), 0) as answer_given_stddev 
 from student_data.problem_logs 
-inner join medians on medians.pid = problem_logs.problem_id 
+inner join ln_medians on ln_medians.pid = problem_logs.problem_id 
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
 and problem_logs.assignment_log_id not in (select assignment_log_id from remnant_excluded_alogs) 
-group by problem_id, medians.time_on_task_med, medians.first_response_time_med; 
+group by problem_id, ln_medians.time_on_task_med, ln_medians.first_response_time_med; 
 
 drop table if exists problem_level_features; 
 create table problem_level_features as 
 select 
 remnant_input_alogs.assignment_log_id as assignment_log_id, 
-median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) as median_problem_time_on_task_raw, 
-median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric) as median_problem_time_on_task_normalized, 
-percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric)) as median_problem_time_on_task_class_percentile, 
-median((problem_logs.first_response_time::float / 1000)::numeric) as median_problem_first_response_time_raw, 
-median((case when problem_level_stats.first_response_time_mad = 0 then 0 else ((problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric) as median_problem_first_response_time_normalized, 
-percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.first_response_time_mad = 0 then 0 else ((problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric)) as median_problem_first_response_time_class_percentile,
+median(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time)))::numeric)) as median_ln_problem_time_on_task_raw, 
+median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric) as median_ln_problem_time_on_task_normalized, 
+percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric)) as median_ln_problem_time_on_task_class_percentile, 
+median(ln(problem_logs.first_response_time::float / 1000)::numeric) as median_ln_problem_first_response_time_raw, 
+median((case when problem_level_stats.first_response_time_mad = 0 then 0 else (ln(problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric) as median_ln_problem_first_response_time_normalized, 
+percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.first_response_time_mad = 0 then 0 else (ln(problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric)) as median_ln_problem_first_response_time_class_percentile,
 avg(problem_logs.attempt_count) as average_problem_attempt_count, 
 avg(case when problem_level_stats.attempt_count_stddev = 0 then 0 else (problem_logs.attempt_count - problem_level_stats.attempt_count_avg) / problem_level_stats.attempt_count_stddev end) as average_problem_attempt_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by avg(case when problem_level_stats.attempt_count_stddev = 0 then 0 else (problem_logs.attempt_count - problem_level_stats.attempt_count_avg) / problem_level_stats.attempt_count_stddev end)) as average_problem_attempt_count_class_percentile, 
@@ -260,12 +260,12 @@ assignment_level_features.day_count_class_percentile,
 assignment_level_features.completed_problem_count_raw,
 assignment_level_features.completed_problem_count_normalized,
 assignment_level_features.completed_problem_count_class_percentile,
-problem_level_features.median_problem_time_on_task_raw,
-problem_level_features.median_problem_time_on_task_normalized,
-problem_level_features.median_problem_time_on_task_class_percentile,
-problem_level_features.median_problem_first_response_time_raw,
-problem_level_features.median_problem_first_response_time_normalized,
-problem_level_features.median_problem_first_response_time_class_percentile,
+problem_level_features.median_ln_problem_time_on_task_raw,
+problem_level_features.median_ln_problem_time_on_task_normalized,
+problem_level_features.median_ln_problem_time_on_task_class_percentile,
+problem_level_features.median_ln_problem_first_response_time_raw,
+problem_level_features.median_ln_problem_first_response_time_normalized,
+problem_level_features.median_ln_problem_first_response_time_class_percentile,
 problem_level_features.average_problem_attempt_count,
 problem_level_features.average_problem_attempt_count_normalized,
 problem_level_features.average_problem_attempt_count_class_percentile,
@@ -353,8 +353,8 @@ row_number() over(partition by experiment_input_alogs.student_id order by assign
 (sequences.parameters like '%pseudo_skill_builder%' or sections.type='MasterySection' or sections.type='LinearMasterySection')::int as is_skill_builder, 
 (assignments.due_date is not null)::int as has_due_date, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
-coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) as time_since_last_assignment_start, 
-coalesce(extract(epoch from (assignment_logs.start_time - lag(filled.end_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) as time_since_last_assignment_end, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_start, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(filled.end_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_end, 
 assignment_level_agg_features.session_count as session_count_raw, 
 case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end as session_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end) as session_count_class_percentile, 
@@ -380,12 +380,12 @@ inner join assignment_level_stats on assignment_level_stats.sequence_id = sequen
 
 drop table if exists problem_level_stats;
 create table problem_level_stats as 
-with medians as
+with ln_medians as
 (
 	select 
 	problem_id as pid, 
-	median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) as time_on_task_med, 
-	median((problem_logs.first_response_time::float / 1000)::numeric) as first_response_time_med 
+	median(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time)))::numeric) as time_on_task_med, 
+	median(ln(problem_logs.first_response_time::float / 1000)::numeric) as first_response_time_med 
 	from student_data.problem_logs 
 	where problem_logs.end_time is not null 
 	and problem_logs.first_response_time is not null 
@@ -394,10 +394,10 @@ with medians as
 )
 select 
 problem_id, 
-medians.time_on_task_med, 
-median(abs(extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - medians.time_on_task_med)::numeric) as time_on_task_mad, 
-medians.first_response_time_med, 
-median(abs((problem_logs.first_response_time::float / 1000) - medians.first_response_time_med)::numeric) as first_response_time_mad, 
+ln_medians.time_on_task_med, 
+median(abs(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - ln_medians.time_on_task_med)::numeric) as time_on_task_mad, 
+ln_medians.first_response_time_med, 
+median(abs(ln(problem_logs.first_response_time::float / 1000) - ln_medians.first_response_time_med)::numeric) as first_response_time_mad, 
 avg(problem_logs.attempt_count) as attempt_count_avg, 
 coalesce(stddev(problem_logs.attempt_count), 0) as attempt_count_stddev, 
 avg((problem_logs.first_action_type_id = 1)::int) as answer_first_avg, 
@@ -407,23 +407,23 @@ coalesce(stddev((problem_logs.discrete_score = 1)::int), 0) as correctness_stdde
 avg((problem_logs.bottom_hint)::int) as answer_given_avg, 
 coalesce(stddev((problem_logs.bottom_hint)::int), 0) as answer_given_stddev 
 from student_data.problem_logs 
-inner join medians on medians.pid = problem_logs.problem_id 
+inner join ln_medians on ln_medians.pid = problem_logs.problem_id 
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
 and problem_logs.assignment_log_id not in (select assignment_log_id from experiment_excluded_alogs) 
-group by problem_id, medians.time_on_task_med, medians.first_response_time_med; 
+group by problem_id, ln_medians.time_on_task_med, ln_medians.first_response_time_med; 
 
 drop table if exists problem_level_features; 
 create table problem_level_features as 
 select 
 experiment_input_alogs.assignment_log_id as assignment_log_id, 
-median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) as median_problem_time_on_task_raw, 
-median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric) as median_problem_time_on_task_normalized, 
-percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (extract(epoch from (problem_logs.end_time - problem_logs.start_time)) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric)) as median_problem_time_on_task_class_percentile, 
-median((problem_logs.first_response_time::float / 1000)::numeric) as median_problem_first_response_time_raw, 
-median((case when problem_level_stats.first_response_time_mad = 0 then 0 else ((problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric) as median_problem_first_response_time_normalized, 
-percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.first_response_time_mad = 0 then 0 else ((problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric)) as median_problem_first_response_time_class_percentile,
+median(ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time)))::numeric)) as median_ln_problem_time_on_task_raw, 
+median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric) as median_ln_problem_time_on_task_normalized, 
+percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.time_on_task_mad = 0 then 0 else (ln(extract(epoch from (problem_logs.end_time - problem_logs.start_time))) - problem_level_stats.time_on_task_med) / problem_level_stats.time_on_task_mad end)::numeric)) as median_ln_problem_time_on_task_class_percentile, 
+median(ln(problem_logs.first_response_time::float / 1000)::numeric) as median_ln_problem_first_response_time_raw, 
+median((case when problem_level_stats.first_response_time_mad = 0 then 0 else (ln(problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric) as median_ln_problem_first_response_time_normalized, 
+percent_rank() over (partition by assignments.group_context_xid order by median((case when problem_level_stats.first_response_time_mad = 0 then 0 else (ln(problem_logs.first_response_time::float / 1000) - problem_level_stats.first_response_time_med) / problem_level_stats.first_response_time_mad end)::numeric)) as median_ln_problem_first_response_time_class_percentile,
 avg(problem_logs.attempt_count) as average_problem_attempt_count, 
 avg(case when problem_level_stats.attempt_count_stddev = 0 then 0 else (problem_logs.attempt_count - problem_level_stats.attempt_count_avg) / problem_level_stats.attempt_count_stddev end) as average_problem_attempt_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by avg(case when problem_level_stats.attempt_count_stddev = 0 then 0 else (problem_logs.attempt_count - problem_level_stats.attempt_count_avg) / problem_level_stats.attempt_count_stddev end)) as average_problem_attempt_count_class_percentile, 
@@ -471,12 +471,12 @@ assignment_level_features.day_count_class_percentile,
 assignment_level_features.completed_problem_count_raw,
 assignment_level_features.completed_problem_count_normalized,
 assignment_level_features.completed_problem_count_class_percentile,
-problem_level_features.median_problem_time_on_task_raw,
-problem_level_features.median_problem_time_on_task_normalized,
-problem_level_features.median_problem_time_on_task_class_percentile,
-problem_level_features.median_problem_first_response_time_raw,
-problem_level_features.median_problem_first_response_time_normalized,
-problem_level_features.median_problem_first_response_time_class_percentile,
+problem_level_features.median_ln_problem_time_on_task_raw,
+problem_level_features.median_ln_problem_time_on_task_normalized,
+problem_level_features.median_ln_problem_time_on_task_class_percentile,
+problem_level_features.median_ln_problem_first_response_time_raw,
+problem_level_features.median_ln_problem_first_response_time_normalized,
+problem_level_features.median_ln_problem_first_response_time_class_percentile,
 problem_level_features.average_problem_attempt_count,
 problem_level_features.average_problem_attempt_count_normalized,
 problem_level_features.average_problem_attempt_count_class_percentile,
