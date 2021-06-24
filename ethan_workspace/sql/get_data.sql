@@ -274,11 +274,11 @@ drop table if exists remnant_inputs;
 create table remnant_inputs as 
 select 
 assignment_level_features.student_id,
+assignment_level_features.assignment_start_time,
 assignment_level_features.directory_1,
 assignment_level_features.directory_2,
 assignment_level_features.directory_3,
 assignment_level_features.sequence_id,
-assignment_level_features.assignment_start_time,
 assignment_level_features.is_skill_builder,
 assignment_level_features.has_due_date,
 assignment_level_features.assignment_completed,
