@@ -50,18 +50,15 @@ select 0 as assignment_log_id;
 
 drop table if exists experiment_target_alogs; 
 create table experiment_target_alogs as 
-select *, 
-encode_ceri('PS', sequence_id) as target_sequence 
+select *
 from ordered_alogs 
 where log_order = 1 
 and assignment_log_id not in (select assignment_log_id from experiment_excluded_alogs) 
 and encode_ceri('PS', sequence_id) in ('PSAHQV', 'PSAH9CV', 'PSAJDQG', 'PSAJDQJ', 'PSAJEQW', 'PSAJJXN', 'PSAJVPW', 'PSAJVP8', 'PSAJ2EE', 'PSAJ4ZZ', 'PSAJ43P', 'PSAKUSU', 'PSAMC2V', 'PSAMGHG', 'PSAMQJD', 'PSAMR8Z', 'PSAM4NK', 'PSAPTW7', 'PSAP8PW', 'PSAQJFP', 'PSAR9Y9', 'PSASDZY', 'PSASRKH', 'PSAS25R', 'PSATNB2', 'PSATNCQ', 'PSATZEJ', 'PSAUKPM', 'PSAUKPR', 'PSAUK57', 'PSAUTWT', 'PSAU6Y4', 'PSAU88D', 'PSAV89B', 'PSAWHF4', 'PSAWU6Z', 'PSABANRN'); 
---and encode_ceri('PS', sequence_id) in ('PSAHQV');
 
 drop table if exists experiment_input_alogs; 
 create table experiment_input_alogs as 
 select 
-experiment_target_alogs.target_sequence, 
 ordered_alogs.* 
 from ordered_alogs 
 inner join experiment_target_alogs on experiment_target_alogs.student_id = ordered_alogs.student_id and experiment_target_alogs.start_time > ordered_alogs.start_time; 
@@ -74,27 +71,21 @@ inner join experiment_target_alogs on experiment_target_alogs.student_id = order
 
 drop table if exists remnant_target_alogs; 
 create table remnant_target_alogs as 
-select *, 
-encode_ceri('PS', sequence_id) as target_sequence 
+select *
 from ordered_alogs 
 where log_order = 1 
 and assignment_log_id not in (select assignment_log_id from remnant_excluded_alogs) 
-and encode_ceri('PS', sequence_id) in ('PSA2H6G', 'PSAVUGH', 'PSAVUGJ', 'PSAVTVP', 'PSAVUGD', 'PSAVUGP', 'PSAVUGC', 'PSAVUGA', 'PSAVUGF', 'PSAVTVM', 'PSAVUF9', 'PSAVUBA', 'PSAVUF6', 'PSAVUBC', 'PSAVUF2', 'PSAVUA4', 'PSAVTVR', 'PSAVUMC', 'PSAVUMH', 'PSAX692', 'PSAVTUH', 'PSAVTUU', 'PSAVUGR', 'PSAVUGQ', 'PSAVUK7', 'PSAVUMA', 'PSAVTVJ', 'PSAVTV6', 'PSAVUAR', 'PSAVUK8', 'PSAVUGY', 'PSAVUME', 'PSA2H6H', 'PSAV9DV', 'PSAVUF5', 'PSAWU7D', 'PSAHK8'); 
---and encode_ceri('PS', sequence_id) in ('PSA2H6G');
+-- Just the 37 with corresponding experiments
+--and encode_ceri('PS', sequence_id) in ('PSA2H6G', 'PSAVUGH', 'PSAVUGJ', 'PSAVTVP', 'PSAVUGD', 'PSAVUGP', 'PSAVUGC', 'PSAVUGA', 'PSAVUGF', 'PSAVTVM', 'PSAVUF9', 'PSAVUBA', 'PSAVUF6', 'PSAVUBC', 'PSAVUF2', 'PSAVUA4', 'PSAVTVR', 'PSAVUMC', 'PSAVUMH', 'PSAX692', 'PSAVTUH', 'PSAVTUU', 'PSAVUGR', 'PSAVUGQ', 'PSAVUK7', 'PSAVUMA', 'PSAVTVJ', 'PSAVTV6', 'PSAVUAR', 'PSAVUK8', 'PSAVUGY', 'PSAVUME', 'PSA2H6H', 'PSAV9DV', 'PSAVUF5', 'PSAWU7D', 'PSAHK8'); 
+-- All active non-experimental skill builders
+and encode_ceri('PS', sequence_id) in ('PSA2H6G', 'PSAVUGH', 'PSAVUGJ', 'PSAVTVP', 'PSAVUGD', 'PSAVUGP', 'PSAVUGC', 'PSAVUGA', 'PSAVUGF', 'PSAVTVM', 'PSAVUF9', 'PSAVUBA', 'PSAVUF6', 'PSAVUBC', 'PSAVUF2', 'PSAVUA4', 'PSAVTVR', 'PSAVUMC', 'PSAVUMH', 'PSAX692', 'PSAVTUH', 'PSAVTUU', 'PSAVUGR', 'PSAVUGQ', 'PSAVUK7', 'PSAVUMA', 'PSAVTVJ', 'PSAVTV6', 'PSAVUAR', 'PSAVUK8', 'PSAVUGY', 'PSAVUME', 'PSA2H6H', 'PSAV9DV', 'PSAVUF5', 'PSAWU7D', 'PSAHK8', 'PSA2NQ', 'PSA2SFT', 'PSA3U7K', 'PSA3UJD', 'PSA3VB6', 'PSA3ZK', 'PSA4B3A', 'PSA4DRY', 'PSA4DT8', 'PSA4E3', 'PSA4E4Y', 'PSA4PKA', 'PSA63E', 'PSA63F', 'PSA659', 'PSA694', 'PSA6T4', 'PSA6T5', 'PSAB3PG', 'PSAB45B', 'PSAB58U', 'PSABBT2', 'PSABBUF', 'PSABCQV', 'PSABCR9', 'PSABCSB', 'PSABEFB', 'PSABEFC', 'PSABFQK', 'PSABFQM', 'PSABHBC', 'PSABHSW', 'PSABHVS', 'PSABHZM', 'PSABHZN', 'PSABHZQ', 'PSABJHB', 'PSABJKH', 'PSABJN5', 'PSABJNE', 'PSABJTF', 'PSABJTH', 'PSABJTJ', 'PSABJTN', 'PSABKKF', 'PSABKKK', 'PSABKKR', 'PSABKKS', 'PSABKKX', 'PSABMFQ', 'PSABMJM', 'PSABN9J', 'PSABNXR', 'PSAC754', 'PSACQ92', 'PSACQ9T', 'PSACQN5', 'PSACQN8', 'PSACQNZ', 'PSACRX4', 'PSACSY5', 'PSACW65', 'PSACXE8', 'PSADH3G', 'PSAEYYJ', 'PSAFTFM', 'PSAG3NC', 'PSAG5N6', 'PSAG5RA', 'PSAG5RD', 'PSAG5RF', 'PSAG5RG', 'PSAG5RM', 'PSAG6YM', 'PSAGAQ5', 'PSAGE9', 'PSAGEH', 'PSAGEJ', 'PSAGFB', 'PSAGFD', 'PSAGFP', 'PSAGGE', 'PSAGGM', 'PSAGGT', 'PSAGGW', 'PSAGJ4', 'PSAGJJ', 'PSAGKS', 'PSAGKX', 'PSAGNVX', 'PSAGPQ', 'PSAGXT', 'PSAGZ4', 'PSAGZU', 'PSAHFQ', 'PSAHG3', 'PSAHGC', 'PSAHHE', 'PSAHJ9J', 'PSAHKJ', 'PSAHKR', 'PSAHKRU', 'PSAHKU', 'PSAHMA', 'PSAHQ4', 'PSAHQ7', 'PSAHQ8', 'PSAHQW', 'PSAHRE', 'PSAHRF', 'PSAHRG', 'PSAHRH', 'PSAHRM', 'PSAHRV', 'PSAHRX', 'PSAHS6', 'PSAHSE', 'PSAHSH', 'PSAHSU', 'PSAHSX', 'PSAHTG', 'PSAJ78', 'PSAJFS5', 'PSAJGW', 'PSAJHU', 'PSAK36', 'PSAK4C', 'PSAK4E', 'PSAKC9', 'PSAKDA', 'PSAKDM', 'PSAKHM', 'PSAKHP', 'PSAKHV', 'PSAKHX', 'PSAKJ6', 'PSAKJX', 'PSAKK8', 'PSAKKA', 'PSAKKY', 'PSAKP3', 'PSAKP4', 'PSAKP5', 'PSAKP9', 'PSAKQA', 'PSAKQB', 'PSAKQC', 'PSAKQG', 'PSAKS9K', 'PSAKUE', 'PSAKXK', 'PSAM2UM', 'PSAMT8', 'PSAMV3', 'PSAMYD', 'PSAMZB', 'PSANA5', 'PSANFE', 'PSANGG', 'PSANGH', 'PSANGJ', 'PSANGM', 'PSAP7AH', 'PSAP7Z', 'PSAP8W', 'PSAPKZ', 'PSAPN5', 'PSAPN7', 'PSAPNT', 'PSAPNX', 'PSAQ4KN', 'PSAQ63B', 'PSAQBPQ', 'PSAQX3X', 'PSAQYS4', 'PSAQYSV', 'PSAQYSY', 'PSAQZTH', 'PSAR2B', 'PSAR4V', 'PSAR5R3', 'PSAR5RU', 'PSARB8M', 'PSARST', 'PSARZW', 'PSARZY', 'PSAS7Q', 'PSASA6', 'PSASANZ', 'PSASBT6', 'PSASBUM', 'PSASEE', 'PSASF93', 'PSASF94', 'PSASFRU', 'PSASG47', 'PSASN7U', 'PSASQFY', 'PSATZEJ', 'PSAVFEZ'); 
 
 drop table if exists remnant_input_alogs; 
 create table remnant_input_alogs as 
-select 
-remnant_target_alogs.target_sequence, 
+select distinct 
 ordered_alogs.* 
 from ordered_alogs 
 inner join remnant_target_alogs on remnant_target_alogs.student_id = ordered_alogs.student_id and remnant_target_alogs.start_time > ordered_alogs.start_time; 
-
-drop table if exists remnant_excluded_alogs; 
-create table remnant_excluded_alogs as 
-select ordered_alogs.* 
-from ordered_alogs 
-inner join experiment_target_alogs on experiment_target_alogs.student_id = ordered_alogs.student_id; 
 
 
 
@@ -164,27 +155,18 @@ where path_number = 1;
 
 drop table if exists assignment_level_features; 
 create table assignment_level_features as 
-with filled as 
-( 
-	select 
-	id, 
-	last(end_time) over (partition by user_xid order by start_time) as end_time 
-	from student_data.assignment_logs 
-) 
 select 
 remnant_input_alogs.assignment_log_id, 
-remnant_input_alogs.target_sequence, 
 remnant_input_alogs.student_id, 
 assignment_paths.directory_1,
 assignment_paths.directory_2,
 assignment_paths.directory_3,
 assignment_paths.sequence_id,
-assignment_logs.start_time as assignment_start_time, 
-row_number() over(partition by remnant_input_alogs.student_id order by assignment_logs.start_time) as assignment_order, 
+extract(epoch from assignment_logs.start_time) as assignment_start_time, 
 (sequences.parameters like '%pseudo_skill_builder%' or sections.type='MasterySection' or sections.type='LinearMasterySection')::int as is_skill_builder, 
 (assignments.due_date is not null)::int as has_due_date, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
-ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) + 0.01) as time_since_last_assignment_start, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_start, 
 assignment_level_agg_features.session_count as session_count_raw, 
 case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end as session_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end) as session_count_class_percentile, 
@@ -201,7 +183,6 @@ inner join assignment_xrefs on assignment_xrefs.xid = assignment_logs.assignment
 inner join core.assignments on assignments.id = assignment_xrefs.id 
 inner join legacy.sequences on sequences.id = assignments.sequence_id 
 inner join legacy.sections on sections.id = sequences.head_section_id 
-inner join filled on filled.id = assignment_logs.id 
 inner join assignment_level_agg_features on assignment_level_agg_features.assignment_log_id = assignment_logs.id 
 inner join assignment_level_stats on assignment_level_stats.sequence_id = sequences.id
 left join assignment_paths on assignment_paths.sequence_id = sequences.id; 
@@ -292,13 +273,12 @@ group by remnant_input_alogs.assignment_log_id, assignments.group_context_xid;
 drop table if exists remnant_inputs; 
 create table remnant_inputs as 
 select 
-assignment_level_features.target_sequence,
 assignment_level_features.student_id,
 assignment_level_features.directory_1,
 assignment_level_features.directory_2,
 assignment_level_features.directory_3,
 assignment_level_features.sequence_id,
-assignment_level_features.assignment_order,
+assignment_level_features.assignment_start_time,
 assignment_level_features.is_skill_builder,
 assignment_level_features.has_due_date,
 assignment_level_features.assignment_completed,
@@ -335,7 +315,7 @@ problem_level_features.average_problem_answer_given_normalized,
 problem_level_features.average_problem_answer_given_class_percentile
 from assignment_level_features 
 left join problem_level_features on assignment_level_features.assignment_log_id = problem_level_features.assignment_log_id
-order by assignment_level_features.student_id, assignment_level_features.assignment_order; 
+order by assignment_level_features.student_id, assignment_level_features.assignment_start_time; 
 
 
 
@@ -346,6 +326,7 @@ create table remnant_targets as
 select 
 encode_ceri('PS', remnant_target_alogs.sequence_id) as target_sequence, 
 remnant_target_alogs.student_id, 
+extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
 count(*) as problems_completed 
 from remnant_target_alogs
@@ -354,7 +335,7 @@ left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
-group by encode_ceri('PS', remnant_target_alogs.sequence_id), remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int 
+group by encode_ceri('PS', remnant_target_alogs.sequence_id), remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int, extract(epoch from remnant_target_alogs.start_time) 
 order by remnant_target_alogs.student_id; 
 
 
