@@ -107,8 +107,13 @@ assignment_log_id,
 sum((action_defn_type_id = 2)::int) + 1 as session_count, 
 count(distinct extract(doy from timestamp)) as day_count, 
 sum((action_defn_type_id = 12 and path not like '%SP%')::int) as completed_problem_count 
-from student_data.assignment_actions 
-where assignment_log_id not in (select assignment_log_id from remnant_excluded_alogs) 
+from 
+(
+	select assignment_actions.* 
+	from student_data.assignment_actions 
+	inner join ordered_alogs on ordered_alogs.assignment_log_id = assignment_actions.assignment_log_id
+	inner join (select distinct sequence_id from remnant_input_alogs) good_sequences on good_sequences.sequence_id = ordered_alogs.sequence_id
+) good_logs
 group by assignment_log_id; 
 
 drop table if exists assignment_level_stats; 
@@ -156,6 +161,7 @@ select * from
 ) paths
 where path_number = 1;
 
+
 drop table if exists assignment_level_features; 
 create table assignment_level_features as 
 with filled as 
@@ -178,7 +184,7 @@ row_number() over(partition by remnant_input_alogs.student_id order by assignmen
 (sequences.parameters like '%pseudo_skill_builder%' or sections.type='MasterySection' or sections.type='LinearMasterySection')::int as is_skill_builder, 
 (assignments.due_date is not null)::int as has_due_date, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
-ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created)))) as time_since_last_assignment_start, 
+ln(coalesce(extract(epoch from (assignment_logs.start_time - lag(assignment_logs.start_time, 1) over (partition by assignment_logs.user_xid order by assignment_logs.start_time))), extract(epoch from (assignment_logs.start_time - users.created))) + 0.01) as time_since_last_assignment_start, 
 assignment_level_agg_features.session_count as session_count_raw, 
 case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end as session_count_normalized, 
 percent_rank() over (partition by assignments.group_context_xid order by case when assignment_level_stats.session_count_stddev = 0 then 0 else (assignment_level_agg_features.session_count - assignment_level_stats.session_count_avg) / assignment_level_stats.session_count_stddev end) as session_count_class_percentile, 
@@ -234,12 +240,14 @@ coalesce(stddev(problem_logs.hint_count), 0) as hint_count_stddev,
 avg((problem_logs.bottom_hint)::int) as answer_given_avg, 
 coalesce(stddev((problem_logs.bottom_hint)::int), 0) as answer_given_stddev 
 from student_data.problem_logs 
+inner join ordered_alogs on ordered_alogs.assignment_log_id = problem_logs.assignment_log_id
+inner join (select distinct sequence_id from remnant_input_alogs) good_sequences on good_sequences.sequence_id = ordered_alogs.sequence_id
 inner join ln_medians on ln_medians.pid = problem_logs.problem_id 
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
-and problem_logs.assignment_log_id not in (select assignment_log_id from remnant_excluded_alogs) 
 group by problem_logs.problem_id, ln_medians.time_on_task_med, ln_medians.first_response_time_med; 
+
 
 drop table if exists problem_level_features; 
 create table problem_level_features as 
