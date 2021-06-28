@@ -325,7 +325,7 @@ order by assignment_level_features.student_id, assignment_level_features.assignm
 drop table if exists remnant_targets; 
 create table remnant_targets as 
 select 
-encode_ceri('PS', remnant_target_alogs.sequence_id) as target_sequence, 
+remnant_target_alogs.sequence_id as target_sequence, 
 remnant_target_alogs.student_id, 
 extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
@@ -336,7 +336,7 @@ left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
-group by encode_ceri('PS', remnant_target_alogs.sequence_id), remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int, extract(epoch from remnant_target_alogs.start_time) 
+group by remnant_target_alogs.sequence_id, remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int, extract(epoch from remnant_target_alogs.start_time) 
 order by remnant_target_alogs.student_id; 
 
 
