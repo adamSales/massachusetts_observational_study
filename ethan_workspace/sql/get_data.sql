@@ -37,6 +37,7 @@ select
 assignment_logs.id as assignment_log_id, 
 assignment_logs.start_time, 
 assignments.sequence_id, 
+assignments.group_context_xid as class_id, 
 student_xrefs.id as student_id, 
 row_number() over(partition by assignment_logs.user_xid, assignments.sequence_id order by assignment_logs.start_time) as log_order 
 from student_data.assignment_logs 
@@ -326,6 +327,7 @@ drop table if exists remnant_targets;
 create table remnant_targets as 
 select 
 remnant_target_alogs.sequence_id as target_sequence, 
+remnant_target_alogs.class_id, 
 remnant_target_alogs.student_id, 
 extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
 (assignment_logs.end_time is not null)::int as assignment_completed, 
@@ -333,10 +335,11 @@ count(*) as problems_completed
 from remnant_target_alogs
 left join student_data.assignment_logs on assignment_logs.id = remnant_target_alogs.assignment_log_id 
 left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_target_alogs.assignment_log_id 
+
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
-group by remnant_target_alogs.sequence_id, remnant_target_alogs.student_id, (assignment_logs.end_time is not null)::int, extract(epoch from remnant_target_alogs.start_time) 
+group by remnant_target_alogs.sequence_id, remnant_target_alogs.class_id, remnant_target_alogs.student_id, extract(epoch from remnant_target_alogs.start_time), (assignment_logs.end_time is not null)::int
 order by remnant_target_alogs.student_id; 
 
 
