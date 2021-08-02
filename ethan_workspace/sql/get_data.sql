@@ -10,23 +10,23 @@ create aggregate last(anyelement) (
     stype = anyelement 
 ); 
 
-create or replace view assignment_xrefs as 
-select id as xid, target_id as id, xref 
-from core.external_references 
-where xref_type_id=3 
-and partner_id=5; 
+--create or replace view assignment_xrefs as 
+--select id as xid, target_id as id, xref 
+--from core.external_references 
+--where xref_type_id=3 
+--and partner_id=5; 
 
-create or replace view student_xrefs as 
-select id as xid, target_id as id, xref 
-from core.external_references 
-where xref_type_id=1 
-and partner_id=5 
-and external_references.id not in 
-( 
-	select user_xid 
-	from users.user_roles 
-	where user_role_definition_id != 6 
-); 
+--create or replace view student_xrefs as 
+--select id as xid, target_id as id, xref 
+--from core.external_references 
+--where xref_type_id=1 
+--and partner_id=5 
+--and external_references.id not in 
+--( 
+--	select user_xid 
+--	from users.user_roles 
+--	where user_role_definition_id != 6 
+--); 
 
 
 -- Input and Target Assignment Logs
@@ -36,6 +36,7 @@ create table ordered_alogs as
 select 
 assignment_logs.id as assignment_log_id, 
 assignment_logs.start_time, 
+assignment_logs.end_time, 
 assignments.sequence_id, 
 assignments.group_context_xid as class_id, 
 student_xrefs.id as student_id, 
@@ -299,47 +300,100 @@ problem_level_features.median_ln_problem_time_on_task_normalized,
 problem_level_features.median_ln_problem_time_on_task_class_percentile,
 problem_level_features.median_ln_problem_first_response_time_raw,
 problem_level_features.median_ln_problem_first_response_time_normalized,
-problem_level_features.median_ln_problem_first_response_time_class_percentile,
-problem_level_features.average_problem_attempt_count,
-problem_level_features.average_problem_attempt_count_normalized,
-problem_level_features.average_problem_attempt_count_class_percentile,
-problem_level_features.average_problem_answer_first,
-problem_level_features.average_problem_answer_first_normalized,
-problem_level_features.average_problem_answer_first_class_percentile,
-problem_level_features.average_problem_correctness,
-problem_level_features.average_problem_correctness_normalized,
-problem_level_features.average_problem_correctness_class_percentile,
-problem_level_features.average_problem_hint_count,
-problem_level_features.average_problem_hint_count_normalized,
-problem_level_features.average_problem_hint_count_class_percentile,
-problem_level_features.average_problem_answer_given,
-problem_level_features.average_problem_answer_given_normalized,
-problem_level_features.average_problem_answer_given_class_percentile
+problem_level_features.median_ln_problem_first_response_time_class_percentile, 
+problem_level_features.average_problem_attempt_count, 
+problem_level_features.average_problem_attempt_count_normalized, 
+problem_level_features.average_problem_attempt_count_class_percentile, 
+problem_level_features.average_problem_answer_first, 
+problem_level_features.average_problem_answer_first_normalized, 
+problem_level_features.average_problem_answer_first_class_percentile, 
+problem_level_features.average_problem_correctness, 
+problem_level_features.average_problem_correctness_normalized, 
+problem_level_features.average_problem_correctness_class_percentile, 
+problem_level_features.average_problem_hint_count, 
+problem_level_features.average_problem_hint_count_normalized, 
+problem_level_features.average_problem_hint_count_class_percentile, 
+problem_level_features.average_problem_answer_given, 
+problem_level_features.average_problem_answer_given_normalized, 
+problem_level_features.average_problem_answer_given_class_percentile 
 from assignment_level_features 
-left join problem_level_features on assignment_level_features.assignment_log_id = problem_level_features.assignment_log_id
+left join problem_level_features on assignment_level_features.assignment_log_id = problem_level_features.assignment_log_id 
 order by assignment_level_features.student_id, assignment_level_features.assignment_start_time; 
 
 
 
 -- Remnant Targets
 
-drop table if exists remnant_targets; 
-create table remnant_targets as 
+drop table if exists assignment_priors;
+create table assignment_priors as
 select 
-remnant_target_alogs.sequence_id as target_sequence, 
-remnant_target_alogs.class_id, 
-remnant_target_alogs.student_id, 
-extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
-(assignment_logs.end_time is not null)::int as assignment_completed, 
-count(*) as problems_completed 
+remnant_target_alogs.assignment_log_id, 
+count(assignment_logs.start_time) as student_prior_assignments_started, 
+count(assignment_logs.end_time)::real / count(assignment_logs.start_time) as student_prior_assignments_percent_completed,
+(count(assignment_logs.end_time) >= 5)::int as student_prior_completed_at_least_five_assignments,
+ln(median(extract(epoch from assignment_logs.end_time - assignment_logs.start_time)::numeric) + 0.00001) as student_prior_median_ln_assignment_time_on_task
 from remnant_target_alogs
-left join student_data.assignment_logs on assignment_logs.id = remnant_target_alogs.assignment_log_id 
-left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_target_alogs.assignment_log_id 
+inner join student_xrefs on student_xrefs.id = remnant_target_alogs.student_id
+inner join student_data.assignment_logs on assignment_logs.user_xid = student_xrefs.xid and assignment_logs.start_time < remnant_target_alogs.start_time
+group by remnant_target_alogs.assignment_log_id;
 
+
+drop table if exists problem_priors;
+create table problem_priors as
+select 
+remnant_target_alogs.assignment_log_id, 
+count(problem_logs.start_time)::real / count(distinct assignment_logs.start_time) as student_prior_average_problems_per_assignment, 
+ln(median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) + 0.00001) as student_prior_median_ln_problem_time_on_task, 
+ln(median((problem_logs.first_response_time::float / 1000)::numeric) + 0.00001) as student_prior_median_ln_problem_first_response_time, 
+avg(problem_logs.discrete_score) as student_prior_average_problem_correctness, 
+avg(problem_logs.attempt_count) as student_prior_average_problem_attempt_count, 
+avg(problem_logs.hint_count) as student_prior_average_problem_hint_count
+from remnant_target_alogs
+inner join student_xrefs on student_xrefs.id = remnant_target_alogs.student_id
+inner join student_data.assignment_logs on assignment_logs.user_xid = student_xrefs.xid and assignment_logs.start_time < remnant_target_alogs.start_time
+inner join student_data.problem_logs on problem_logs.assignment_log_id = assignment_logs.id
 where problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
-group by remnant_target_alogs.sequence_id, remnant_target_alogs.class_id, remnant_target_alogs.student_id, extract(epoch from remnant_target_alogs.start_time), (assignment_logs.end_time is not null)::int
-order by remnant_target_alogs.student_id; 
+group by remnant_target_alogs.assignment_log_id;
+
+
+drop table if exists remnant_target_problems_completed;
+create table remnant_target_problems_completed as
+select
+remnant_target_alogs.assignment_log_id,
+count(*) as problems_completed 
+from remnant_target_alogs 
+left join student_data.problem_logs on problem_logs.assignment_log_id = remnant_target_alogs.assignment_log_id 
+where problem_logs.end_time is not null 
+and problem_logs.first_response_time is not null 
+and problem_logs.path_info not like '%SP%' 
+group by remnant_target_alogs.assignment_log_id;
+
+
+drop table if exists remnant_targets; 
+create table remnant_targets as 
+select 
+remnant_target_alogs.class_id, 
+remnant_target_alogs.student_id, 
+extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
+remnant_target_alogs.sequence_id as target_sequence, 
+assignment_priors.student_prior_assignments_started,
+assignment_priors.student_prior_assignments_percent_completed,
+assignment_priors.student_prior_completed_at_least_five_assignments,
+assignment_priors.student_prior_median_ln_assignment_time_on_task,
+problem_priors.student_prior_average_problems_per_assignment,
+problem_priors.student_prior_median_ln_problem_time_on_task,
+problem_priors.student_prior_median_ln_problem_first_response_time,
+problem_priors.student_prior_average_problem_correctness,
+problem_priors.student_prior_average_problem_attempt_count,
+problem_priors.student_prior_average_problem_hint_count,
+(remnant_target_alogs.end_time is not null)::int as assignment_completed, 
+remnant_target_problems_completed.problems_completed
+from remnant_target_alogs 
+left join remnant_target_problems_completed on remnant_target_problems_completed.assignment_log_id = remnant_target_alogs.assignment_log_id 
+left join assignment_priors on assignment_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
+left join problem_priors on problem_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
+order by remnant_target_alogs.student_id, remnant_target_alogs.start_time; 
 
 
