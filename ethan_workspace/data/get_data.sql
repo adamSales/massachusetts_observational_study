@@ -389,7 +389,7 @@ problem_priors.student_prior_average_problem_correctness,
 problem_priors.student_prior_average_problem_attempt_count,
 problem_priors.student_prior_average_problem_hint_count,
 (remnant_target_alogs.end_time is not null)::int as assignment_completed, 
-remnant_target_problems_completed.problems_completed
+coalesce(remnant_target_problems_completed.problems_completed, 0) as problems_completed
 from remnant_target_alogs 
 left join remnant_target_problems_completed on remnant_target_problems_completed.assignment_log_id = remnant_target_alogs.assignment_log_id 
 left join assignment_priors on assignment_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
