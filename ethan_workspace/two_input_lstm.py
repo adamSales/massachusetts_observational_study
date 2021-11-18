@@ -2,16 +2,16 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score, r2_score, accuracy_score
-import keras
-import tensorflow as tf
-from tensorflow.keras.models import Model
-from tensorflow.compat.v1.keras.layers import CuDNNLSTM
-from tensorflow.keras.layers import Input, Masking, LSTM, Dense, Dropout, Concatenate
-from tensorflow.keras.callbacks import EarlyStopping
+#import keras
+#import tensorflow as tf
+#from tensorflow.keras.models import Model
+#from tensorflow.compat.v1.keras.layers import CuDNNLSTM
+#from tensorflow.keras.layers import Input, Masking, LSTM, Dense, Dropout, Concatenate
+#from tensorflow.keras.callbacks import EarlyStopping
 
 # Hide GPU from visible devices
-tf.config.set_visible_devices([], 'GPU')
-print(f'CUDA GPU AVAILABLE: {tf.test.is_gpu_available(cuda_only=True)}')
+#tf.config.set_visible_devices([], 'GPU')
+#print(f'CUDA GPU AVAILABLE: {tf.test.is_gpu_available(cuda_only=True)}')
 
 
 def mean_absolute_percentage_error(y_true, y_pred):
@@ -29,6 +29,8 @@ problem_count_r2 = []
 for i in range(N_SPLITS):
 
     recurrent_training_input = np.load(f'{DATA_DIR}/recurrent_training_input_{i}.npy')
+    print(recurrent_training_input.shape)
+    asdadasdasds
     prior_training_input = np.load(f'{DATA_DIR}/prior_training_input_{i}.npy')
     completion_training_target = np.load(f'{DATA_DIR}/completion_training_target_{i}.npy')
     problem_count_training_target = np.load(f'{DATA_DIR}/problems_training_target_{i}.npy')

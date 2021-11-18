@@ -28,6 +28,7 @@ assignment_logs.end_time,
 assignments.sequence_id, 
 assignments.group_context_xid as class_id, 
 student_xrefs.id as student_id, 
+(assignments.due_date is not null)::int as has_due_date, 
 row_number() over(partition by assignment_logs.user_xid, assignments.sequence_id order by assignment_logs.start_time) as log_order 
 from student_data.assignment_logs 
 inner join student_xrefs on student_xrefs.xid = assignment_logs.user_xid 
@@ -79,6 +80,64 @@ inner join remnant_target_alogs on remnant_target_alogs.student_id = ordered_alo
 
 
 
+
+
+
+
+
+
+
+-- Remnant Actions
+
+drop table if exists remnant_actions; 
+create table remnant_actions as 
+select 
+remnant_input_alogs.student_id, 
+extract(epoch from assignment_actions.timestamp)::int - (extract(epoch from assignment_actions.timestamp)::int % 86400) as timestamp, 
+sum((assignment_actions.action_defn_type_id = 1)::int) as action_1_count, 
+sum((assignment_actions.action_defn_type_id = 2)::int) as action_2_count, 
+sum((assignment_actions.action_defn_type_id = 3)::int) as action_3_count, 
+sum((assignment_actions.action_defn_type_id = 4)::int) as action_4_count, 
+sum((assignment_actions.action_defn_type_id = 5)::int) as action_5_count, 
+sum((assignment_actions.action_defn_type_id = 6)::int) as action_6_count, 
+sum((assignment_actions.action_defn_type_id = 7)::int) as action_7_count, 
+sum((assignment_actions.action_defn_type_id = 8)::int) as action_8_count, 
+sum((assignment_actions.action_defn_type_id = 9)::int) as action_9_count, 
+sum((assignment_actions.action_defn_type_id = 10)::int) as action_10_count, 
+sum((assignment_actions.action_defn_type_id = 11)::int) as action_11_count, 
+sum((assignment_actions.action_defn_type_id = 12)::int) as action_12_count, 
+sum((assignment_actions.action_defn_type_id = 13)::int) as action_13_count, 
+sum((assignment_actions.action_defn_type_id = 14)::int) as action_14_count, 
+sum((assignment_actions.action_defn_type_id = 15)::int) as action_15_count, 
+sum((assignment_actions.action_defn_type_id = 16)::int) as action_16_count, 
+sum((assignment_actions.action_defn_type_id = 17)::int) as action_17_count, 
+sum((assignment_actions.action_defn_type_id = 18)::int) as action_18_count, 
+sum((assignment_actions.action_defn_type_id = 19)::int) as action_19_count, 
+sum((assignment_actions.action_defn_type_id = 20 and coalesce(action_responses.correct, false))::int) as action_20a_count, 
+sum((assignment_actions.action_defn_type_id = 20 and not coalesce(action_responses.correct, false))::int) as action_20b_count, 
+sum((assignment_actions.action_defn_type_id = 21)::int) as action_21_count, 
+sum((assignment_actions.action_defn_type_id = 22)::int) as action_22_count, 
+sum((assignment_actions.action_defn_type_id = 23)::int) as action_23_count, 
+sum((assignment_actions.action_defn_type_id = 24)::int) as action_24_count, 
+sum((assignment_actions.action_defn_type_id = 25)::int) as action_25_count, 
+sum((assignment_actions.action_defn_type_id = 26)::int) as action_26_count, 
+sum((assignment_actions.action_defn_type_id = 27)::int) as action_27_count, 
+sum((assignment_actions.action_defn_type_id = 28)::int) as action_28_count, 
+sum((assignment_actions.action_defn_type_id = 29)::int) as action_29_count, 
+sum((assignment_actions.action_defn_type_id = 30)::int) as action_30_count, 
+sum((assignment_actions.action_defn_type_id = 31)::int) as action_31_count, 
+sum((assignment_actions.action_defn_type_id = 32)::int) as action_32_count, 
+sum((assignment_actions.action_defn_type_id = 33)::int) as action_33_count, 
+sum((assignment_actions.action_defn_type_id = 34)::int) as action_34_count, 
+sum((assignment_actions.action_defn_type_id = 35)::int) as action_35_count 
+from student_data.assignment_actions 
+left join student_data.problem_actions on problem_actions.id = assignment_actions.action_id 
+left join student_data.action_responses on action_responses.id = problem_actions.action_details_id 
+inner join remnant_input_alogs on remnant_input_alogs.assignment_log_id = assignment_actions.assignment_log_id 
+group by remnant_input_alogs.student_id, extract(epoch from assignment_actions.timestamp)::int - (extract(epoch from assignment_actions.timestamp)::int % 86400); 
+
+
+
 -- Remnant Assignment Level Features
 
 drop table if exists remnant_assignment_level_agg_features; 
@@ -94,7 +153,8 @@ from
 	from student_data.assignment_actions 
 	inner join ordered_alogs on ordered_alogs.assignment_log_id = assignment_actions.assignment_log_id
 	inner join (select distinct sequence_id from remnant_input_alogs) good_sequences on good_sequences.sequence_id = ordered_alogs.sequence_id
-) good_logs
+	where ordered_alogs.student_id not in (select student_id from experiment_target_alogs) 
+) good_logs 
 group by assignment_log_id; 
 
 drop table if exists assignment_level_stats; 
@@ -214,7 +274,8 @@ from student_data.problem_logs
 inner join ordered_alogs on ordered_alogs.assignment_log_id = problem_logs.assignment_log_id
 inner join (select distinct sequence_id from remnant_input_alogs) good_sequences on good_sequences.sequence_id = ordered_alogs.sequence_id
 inner join ln_medians on ln_medians.pid = problem_logs.problem_id 
-where problem_logs.end_time is not null 
+where ordered_alogs.student_id not in (select student_id from experiment_target_alogs) 
+and problem_logs.end_time is not null 
 and problem_logs.first_response_time is not null 
 and problem_logs.path_info not like '%SP%' 
 group by problem_logs.problem_id, ln_medians.time_on_task_med, ln_medians.first_response_time_med; 
@@ -364,6 +425,7 @@ remnant_target_alogs.class_id,
 remnant_target_alogs.student_id, 
 extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
 encode_ceri('PS', remnant_target_alogs.sequence_id) as target_sequence, 
+remnant_target_alogs.has_due_date, 
 remnant_assignment_priors.student_prior_assignments_started,
 remnant_assignment_priors.student_prior_assignments_percent_completed,
 remnant_assignment_priors.student_prior_median_ln_assignment_time_on_task,
@@ -387,6 +449,57 @@ order by remnant_target_alogs.student_id, remnant_target_alogs.start_time;
 
 
 
+
+
+
+-- Experiment Actions
+
+drop table if exists experiment_actions; 
+create table experiment_actions as 
+select 
+experiment_input_alogs.student_id, 
+extract(epoch from assignment_actions.timestamp)::int - (extract(epoch from assignment_actions.timestamp)::int % 86400) as timestamp, 
+sum((assignment_actions.action_defn_type_id = 1)::int) as action_1_count, 
+sum((assignment_actions.action_defn_type_id = 2)::int) as action_2_count, 
+sum((assignment_actions.action_defn_type_id = 3)::int) as action_3_count, 
+sum((assignment_actions.action_defn_type_id = 4)::int) as action_4_count, 
+sum((assignment_actions.action_defn_type_id = 5)::int) as action_5_count, 
+sum((assignment_actions.action_defn_type_id = 6)::int) as action_6_count, 
+sum((assignment_actions.action_defn_type_id = 7)::int) as action_7_count, 
+sum((assignment_actions.action_defn_type_id = 8)::int) as action_8_count, 
+sum((assignment_actions.action_defn_type_id = 9)::int) as action_9_count, 
+sum((assignment_actions.action_defn_type_id = 10)::int) as action_10_count, 
+sum((assignment_actions.action_defn_type_id = 11)::int) as action_11_count, 
+sum((assignment_actions.action_defn_type_id = 12)::int) as action_12_count, 
+sum((assignment_actions.action_defn_type_id = 13)::int) as action_13_count, 
+sum((assignment_actions.action_defn_type_id = 14)::int) as action_14_count, 
+sum((assignment_actions.action_defn_type_id = 15)::int) as action_15_count, 
+sum((assignment_actions.action_defn_type_id = 16)::int) as action_16_count, 
+sum((assignment_actions.action_defn_type_id = 17)::int) as action_17_count, 
+sum((assignment_actions.action_defn_type_id = 18)::int) as action_18_count, 
+sum((assignment_actions.action_defn_type_id = 19)::int) as action_19_count, 
+sum((assignment_actions.action_defn_type_id = 20 and coalesce(action_responses.correct, false))::int) as action_20a_count, 
+sum((assignment_actions.action_defn_type_id = 20 and not coalesce(action_responses.correct, false))::int) as action_20b_count, 
+sum((assignment_actions.action_defn_type_id = 21)::int) as action_21_count, 
+sum((assignment_actions.action_defn_type_id = 22)::int) as action_22_count, 
+sum((assignment_actions.action_defn_type_id = 23)::int) as action_23_count, 
+sum((assignment_actions.action_defn_type_id = 24)::int) as action_24_count, 
+sum((assignment_actions.action_defn_type_id = 25)::int) as action_25_count, 
+sum((assignment_actions.action_defn_type_id = 26)::int) as action_26_count, 
+sum((assignment_actions.action_defn_type_id = 27)::int) as action_27_count, 
+sum((assignment_actions.action_defn_type_id = 28)::int) as action_28_count, 
+sum((assignment_actions.action_defn_type_id = 29)::int) as action_29_count, 
+sum((assignment_actions.action_defn_type_id = 30)::int) as action_30_count, 
+sum((assignment_actions.action_defn_type_id = 31)::int) as action_31_count, 
+sum((assignment_actions.action_defn_type_id = 32)::int) as action_32_count, 
+sum((assignment_actions.action_defn_type_id = 33)::int) as action_33_count, 
+sum((assignment_actions.action_defn_type_id = 34)::int) as action_34_count, 
+sum((assignment_actions.action_defn_type_id = 35)::int) as action_35_count 
+from student_data.assignment_actions 
+left join student_data.problem_actions on problem_actions.id = assignment_actions.action_id 
+left join student_data.action_responses on action_responses.id = problem_actions.action_details_id 
+inner join experiment_input_alogs on experiment_input_alogs.assignment_log_id = assignment_actions.assignment_log_id 
+group by experiment_input_alogs.student_id, extract(epoch from assignment_actions.timestamp)::int - (extract(epoch from assignment_actions.timestamp)::int % 86400); 
 
 
 
@@ -675,6 +788,7 @@ experiment_target_alogs.class_id,
 experiment_target_alogs.student_id, 
 extract(epoch from experiment_target_alogs.start_time) as assignment_start_time, 
 encode_ceri('PS', experiment_target_alogs.sequence_id) as target_sequence, 
+experiment_target_alogs.has_due_date, 
 experiment_assignment_priors.student_prior_assignments_started,
 experiment_assignment_priors.student_prior_assignments_percent_completed,
 experiment_assignment_priors.student_prior_median_ln_assignment_time_on_task,
