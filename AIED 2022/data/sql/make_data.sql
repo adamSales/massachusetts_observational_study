@@ -419,6 +419,44 @@ and problem_logs.path_info not like '%SP%'
 group by remnant_target_alogs.assignment_log_id;
 
 
+drop table if exists remnant_skill_problem_priors; 
+create table remnant_skill_problem_priors as 
+with target_skills as 
+( 
+	select 
+	remnant_target_alogs.sequence_id, 
+	metadata_taggings.metadata_value_id 
+	from remnant_target_alogs 
+	inner join legacy.assistment_to_sequence_associations on assistment_to_sequence_associations.sequence_id = remnant_target_alogs.sequence_id 
+	inner join legacy.problems on problems.assistment_id = assistment_to_sequence_associations.assistment_id 
+	inner join legacy.metadata_taggings on metadata_taggings.object_id = problems.id 
+	where metadata_taggings.metadata_definition_id = 1 
+	and metadata_taggings.metadata_target_id = 1 
+	group by remnant_target_alogs.sequence_id, metadata_taggings.metadata_value_id 
+) 
+select 
+remnant_target_alogs.assignment_log_id, 
+count(problem_logs.start_time)::real / count(distinct assignment_logs.start_time) as student_skill_prior_average_problems_per_assignment, 
+ln(median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) + 0.00001) as student_skill_prior_median_ln_problem_time_on_task, 
+ln(median((problem_logs.first_response_time::float / 1000)::numeric) + 0.00001) as student_skill_prior_median_ln_problem_first_response_time, 
+avg(problem_logs.discrete_score) as student_skill_prior_average_problem_correctness, 
+avg(problem_logs.attempt_count) as student_skill_prior_average_problem_attempt_count, 
+avg((problem_logs.first_action_type_id=1)::int) as student_skill_prior_average_answer_first, 
+avg(problem_logs.hint_count) as student_skill_prior_average_problem_hint_count
+from remnant_target_alogs
+inner join student_xrefs on student_xrefs.id = remnant_target_alogs.student_id
+inner join student_data.assignment_logs on assignment_logs.user_xid = student_xrefs.xid and assignment_logs.start_time < remnant_target_alogs.start_time
+inner join student_data.problem_logs on problem_logs.assignment_log_id = assignment_logs.id 
+inner join legacy.metadata_taggings on metadata_taggings.object_id = problem_logs.problem_id 
+inner join target_skills on target_skills.sequence_id = remnant_target_alogs.sequence_id and target_skills.metadata_value_id = metadata_taggings.metadata_value_id
+where problem_logs.end_time is not null 
+and problem_logs.first_response_time is not null 
+and problem_logs.path_info not like '%SP%' 
+and metadata_taggings.metadata_definition_id = 1 
+and metadata_taggings.metadata_target_id = 1 
+group by remnant_target_alogs.assignment_log_id;
+
+
 drop table if exists remnant_targets; 
 create table remnant_targets as 
 select 
@@ -437,12 +475,20 @@ remnant_problem_priors.student_prior_average_problem_correctness,
 remnant_problem_priors.student_prior_average_problem_attempt_count,
 remnant_problem_priors.student_prior_average_answer_first,
 remnant_problem_priors.student_prior_average_problem_hint_count,
+remnant_skill_problem_priors.student_skill_prior_average_problems_per_assignment,
+remnant_skill_problem_priors.student_skill_prior_median_ln_problem_time_on_task,
+remnant_skill_problem_priors.student_skill_prior_median_ln_problem_first_response_time,
+remnant_skill_problem_priors.student_skill_prior_average_problem_correctness,
+remnant_skill_problem_priors.student_skill_prior_average_problem_attempt_count,
+remnant_skill_problem_priors.student_skill_prior_average_answer_first,
+remnant_skill_problem_priors.student_skill_prior_average_problem_hint_count,
 (remnant_target_alogs.end_time is not null)::int as assignment_completed, 
 coalesce(remnant_target_problems_completed.problems_completed, 0) as problems_completed
 from remnant_target_alogs 
 left join remnant_target_problems_completed on remnant_target_problems_completed.assignment_log_id = remnant_target_alogs.assignment_log_id 
 left join remnant_assignment_priors on remnant_assignment_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
 left join remnant_problem_priors on remnant_problem_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
+left join remnant_skill_problem_priors on remnant_skill_problem_priors.assignment_log_id = remnant_target_alogs.assignment_log_id 
 order by remnant_target_alogs.student_id, remnant_target_alogs.start_time; 
 
 
@@ -784,6 +830,44 @@ and problem_logs.path_info not like '%SP%'
 group by experiment_target_alogs.assignment_log_id;
 
 
+drop table if exists experiment_skill_problem_priors; 
+create table experiment_skill_problem_priors as 
+with target_skills as 
+( 
+	select 
+	experiment_target_alogs.sequence_id, 
+	metadata_taggings.metadata_value_id 
+	from experiment_target_alogs 
+	inner join legacy.assistment_to_sequence_associations on assistment_to_sequence_associations.sequence_id = experiment_target_alogs.sequence_id 
+	inner join legacy.problems on problems.assistment_id = assistment_to_sequence_associations.assistment_id 
+	inner join legacy.metadata_taggings on metadata_taggings.object_id = problems.id 
+	where metadata_taggings.metadata_definition_id = 1 
+	and metadata_taggings.metadata_target_id = 1 
+	group by experiment_target_alogs.sequence_id, metadata_taggings.metadata_value_id 
+) 
+select 
+experiment_target_alogs.assignment_log_id, 
+count(problem_logs.start_time)::real / count(distinct assignment_logs.start_time) as student_skill_prior_average_problems_per_assignment, 
+ln(median(extract(epoch from (problem_logs.end_time - problem_logs.start_time))::numeric) + 0.00001) as student_skill_prior_median_ln_problem_time_on_task, 
+ln(median((problem_logs.first_response_time::float / 1000)::numeric) + 0.00001) as student_skill_prior_median_ln_problem_first_response_time, 
+avg(problem_logs.discrete_score) as student_skill_prior_average_problem_correctness, 
+avg(problem_logs.attempt_count) as student_skill_prior_average_problem_attempt_count, 
+avg((problem_logs.first_action_type_id=1)::int) as student_skill_prior_average_answer_first, 
+avg(problem_logs.hint_count) as student_skill_prior_average_problem_hint_count
+from experiment_target_alogs
+inner join student_xrefs on student_xrefs.id = experiment_target_alogs.student_id
+inner join student_data.assignment_logs on assignment_logs.user_xid = student_xrefs.xid and assignment_logs.start_time < experiment_target_alogs.start_time
+inner join student_data.problem_logs on problem_logs.assignment_log_id = assignment_logs.id 
+inner join legacy.metadata_taggings on metadata_taggings.object_id = problem_logs.problem_id 
+inner join target_skills on target_skills.sequence_id = experiment_target_alogs.sequence_id and target_skills.metadata_value_id = metadata_taggings.metadata_value_id
+where problem_logs.end_time is not null 
+and problem_logs.first_response_time is not null 
+and problem_logs.path_info not like '%SP%' 
+and metadata_taggings.metadata_definition_id = 1 
+and metadata_taggings.metadata_target_id = 1 
+group by experiment_target_alogs.assignment_log_id;
+
+
 drop table if exists experiment_targets; 
 create table experiment_targets as 
 select 
@@ -802,12 +886,20 @@ experiment_problem_priors.student_prior_average_problem_correctness,
 experiment_problem_priors.student_prior_average_problem_attempt_count,
 experiment_problem_priors.student_prior_average_answer_first,
 experiment_problem_priors.student_prior_average_problem_hint_count,
+experiment_skill_problem_priors.student_skill_prior_average_problems_per_assignment,
+experiment_skill_problem_priors.student_skill_prior_median_ln_problem_time_on_task,
+experiment_skill_problem_priors.student_skill_prior_median_ln_problem_first_response_time,
+experiment_skill_problem_priors.student_skill_prior_average_problem_correctness,
+experiment_skill_problem_priors.student_skill_prior_average_problem_attempt_count,
+experiment_skill_problem_priors.student_skill_prior_average_answer_first,
+experiment_skill_problem_priors.student_skill_prior_average_problem_hint_count,
 (experiment_target_alogs.end_time is not null)::int as assignment_completed, 
 coalesce(experiment_target_problems_completed.problems_completed, 0) as problems_completed
 from experiment_target_alogs 
 left join experiment_target_problems_completed on experiment_target_problems_completed.assignment_log_id = experiment_target_alogs.assignment_log_id 
 left join experiment_assignment_priors on experiment_assignment_priors.assignment_log_id = experiment_target_alogs.assignment_log_id 
 left join experiment_problem_priors on experiment_problem_priors.assignment_log_id = experiment_target_alogs.assignment_log_id 
+left join experiment_skill_problem_priors on experiment_skill_problem_priors.assignment_log_id = experiment_target_alogs.assignment_log_id 
 order by experiment_target_alogs.student_id, experiment_target_alogs.start_time; 
 
 
