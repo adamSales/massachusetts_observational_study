@@ -93,6 +93,7 @@ select * from log_orders
 where log_order = 1; 
 
 select 
+first_alogs.id as assignment_log_id, 
 first_alogs.sequence_id, 
 first_alogs.user_id, 
 max((concat(s1.name, s2.name, s3.name, s4.name, s5.name) ilike '%[control%')::int) as in_control, 
@@ -104,4 +105,4 @@ left join legacy.sections as s2 on s2.id = ('0' || split_part(btrim(replace(spli
 left join legacy.sections as s3 on s3.id = ('0' || split_part(btrim(replace(split_part(problem_logs.path_info, 'LPR', 1), 'LPS', ''), '/'), '/', 3))::int 
 left join legacy.sections as s4 on s4.id = ('0' || split_part(btrim(replace(split_part(problem_logs.path_info, 'LPR', 1), 'LPS', ''), '/'), '/', 4))::int 
 left join legacy.sections as s5 on s5.id = ('0' || split_part(btrim(replace(split_part(problem_logs.path_info, 'LPR', 1), 'LPS', ''), '/'), '/', 5))::int 
-group by first_alogs.sequence_id, first_alogs.user_id; 
+group by first_alogs.id, first_alogs.sequence_id, first_alogs.user_id; 

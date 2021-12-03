@@ -460,6 +460,7 @@ group by remnant_target_alogs.assignment_log_id;
 drop table if exists remnant_targets; 
 create table remnant_targets as 
 select 
+remnant_target_alogs.assignment_log_id, 
 remnant_target_alogs.class_id, 
 remnant_target_alogs.student_id, 
 extract(epoch from remnant_target_alogs.start_time) as assignment_start_time, 
@@ -871,6 +872,7 @@ group by experiment_target_alogs.assignment_log_id;
 drop table if exists experiment_targets; 
 create table experiment_targets as 
 select 
+experiment_target_alogs.assignment_log_id, 
 experiment_target_alogs.class_id, 
 experiment_target_alogs.student_id, 
 extract(epoch from experiment_target_alogs.start_time) as assignment_start_time, 
