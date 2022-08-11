@@ -1,0 +1,10 @@
+mcas: https://profiles.doe.mass.edu/statereport/mcas.aspx
+educator-age: https://profiles.doe.mass.edu/statereport/agestaffing.aspx
+educator-race: https://profiles.doe.mass.edu/statereport/teacherbyracegender.aspx
+educator-retention: https://profiles.doe.mass.edu/statereport/staffingRetentionRates.aspx
+educator-area: https://profiles.doe.mass.edu/statereport/programareastaffing.aspx
+educator-ratios: https://profiles.doe.mass.edu/statereport/teacherdata.aspx
+enrollment-grade: https://profiles.doe.mass.edu/statereport/enrollmentbygrade.aspx
+enrollment-gender: https://profiles.doe.mass.edu/statereport/classsizebygenderpopulation.aspx
+enrollment-race: https://profiles.doe.mass.edu/statereport/classsizebyraceethnicity.aspx
+mobility: https://profiles.doe.mass.edu/statereport/mobilityrates.aspx
