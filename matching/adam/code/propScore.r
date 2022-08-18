@@ -1,9 +1,9 @@
 library(optmatch)
 library(cpt)
-
+library(tidyverse)
 ### load in data
 ## source('code/data.r')
-dat <- read_csv('data/data_for_matching.csv')
+dat <- read_csv('matching/adam/data_for_matching.csv')
 
 ## in model:
 ## acheivement
