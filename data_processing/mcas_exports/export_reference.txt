@@ -8,3 +8,4 @@ enrollment-grade: https://profiles.doe.mass.edu/statereport/enrollmentbygrade.as
 enrollment-gender: https://profiles.doe.mass.edu/statereport/classsizebygenderpopulation.aspx
 enrollment-race: https://profiles.doe.mass.edu/statereport/classsizebyraceethnicity.aspx
 mobility: https://profiles.doe.mass.edu/statereport/mobilityrates.aspx
+charter-schools: https://profiles.doe.mass.edu/search/search.aspx?leftNavId=11238
